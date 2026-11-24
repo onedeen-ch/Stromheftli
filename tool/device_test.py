@@ -97,8 +97,11 @@ def main():
     find("1.39 kWh")
     print("XLSX import via DocumentsUI confirmed",flush=True)
     pdf=document("rechnung.pdf","application/pdf",sample_pdf())
-    shell("am","start","-n",ACTIVITY,"-a","android.intent.action.SEND","-t","application/pdf","--eu",
-          "android.intent.extra.STREAM",pdf,"--grant-read-uri-permission")
+    # adb sends the raw intent straight to ActivityManager. A regular sharing app
+    # supplies ClipData for the grant. Include the same URI as data for adb.
+    print(shell("am","start","-W","-n",ACTIVITY,"-a","android.intent.action.SEND",
+                "-d",pdf,"-t","application/pdf","--eu","android.intent.extra.STREAM",pdf,
+                "--grant-read-uri-permission"),flush=True)
     touch("Rechnung speichern")
     shell("content","delete","--uri",pdf)
     shell("am","force-stop",PKG)
@@ -116,4 +119,8 @@ def main():
     print("Cold restart, shared PDF copy and native offline rendering confirmed",flush=True)
 
 if __name__=="__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        print(shell("logcat","-d","-t","550"),flush=True)
+        raise
