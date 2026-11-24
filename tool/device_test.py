@@ -29,7 +29,7 @@ def find(label, timeout=40, tap=False, prefix=False):
             for n in tree.iter("node"):
                 labels = [n.get("text", ""), n.get("content-desc", "")]
                 visible.extend(s for s in labels if s)
-                if any(v == label or label in v.splitlines() or (prefix and v.startswith(label)) for v in labels):
+                if any(v.casefold() == label.casefold() or label in v.splitlines() or (prefix and v.startswith(label)) for v in labels):
                     if tap:
                         x1,y1,x2,y2 = map(int,re.findall(r"\d+",n.get("bounds")))
                         shell("input","tap",str((x1+x2)//2),str((y1+y2)//2))
