@@ -56,6 +56,31 @@ void main(){
       expect(sat.nt,closeTo(148,1e-8));expect(sat.ht,0);
     }
   });
+  test('Zählerzeit am Intervallende: 03:00, 02:15 und erneut 03:00',(){
+    final a=DateTime.utc(2026,9,30,22).millisecondsSinceEpoch;
+    final sheet=Sheet();
+    for(var i=0;i<2980;i++){
+      final t=a+i*quarter;
+      final l=local(t);
+      final wall=DateTime.utc(l.year,l.month,l.day,l.hour,l.minute).add(const Duration(minutes:15));
+      // Deterministische Testwerte; keine Kundendaten im Repository.
+      final saturday=l.day==31;
+      final ht=l.weekday<=5 && l.hour>=7 && l.hour<19;
+      final energy=saturday?(i==2979?6.179:1.5):ht?
+        (l.day==1&&l.hour==7&&l.minute==0?11.189:0.9):
+        (i==0?138.727:1.3);
+      sheet.rows.add(Raw(i+2,wall,energy*4));
+    }
+    final p=resolveSheet(sheet,true);
+    expect(p.errors,isEmpty);expect(p.warnings,isEmpty);expect(p.gaps,0);
+    expect(p.data.keys,[for(var i=0;i<2980;i++)a+i*quarter]);
+    final store=Store(UnusedDatabase())..readings.addAll(p.data);
+    final b=bucket(store,a,a+2980*quarter);
+    expect(b.ht,closeTo(960.689,1e-8));expect(b.nt,closeTo(2662.506,1e-8));
+    expect(b.total,closeTo(3623.195,1e-8));
+    final last=bucket(store,midnight(DateTime.utc(2026,10,31)),b.stop);
+    expect(last.total,closeTo(148.679,1e-8));
+  });
   test('Intervallenergie und Leistung liefern dieselben kWh',(){
     for(final (header,value) in [('Energie [kWh]','1,125'),('Wirkleistung [kW]','4,5'),('Leistung [W]','4500'),('Energie [Wh]','1125')]){
       final csv='Datum;Zeit;$header\n01.10.2026;07:15;$value';

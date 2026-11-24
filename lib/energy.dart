@@ -162,7 +162,14 @@ List<int> candidates(DateTime w){
 }
 ImportPreview resolveSheet(Sheet sheet,bool end,{bool late=false}){
   final p=ImportPreview()..errors.addAll(sheet.errors);
-  final options=sheet.rows.map((r)=>candidates(r.wall)).toList();
+  final options=sheet.rows.map((row){
+    final instants=candidates(row.wall);
+    if(!end)return instants;
+    // Some meters label an interval end using the offset at its start.
+    // At rollback this yields 02:45, 03:00, 02:15 instead of 02:45, 02:00, 02:15.
+    final priorWall=row.wall.subtract(const Duration(minutes:15));
+    return {...instants,for(final t in candidates(priorWall)) t+quarter}.toList()..sort();
+  }).toList();
   final latest=List<int?>.filled(options.length,null);
   int? next;
   for(var i=options.length-1;i>=0;i--){
