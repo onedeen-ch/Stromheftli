@@ -15,3 +15,7 @@ Unter Verbrauch zwischen Tag, Woche und Monat wechseln. Auf einen Balken tippen 
 ## Entwicklung
 
 Flutter 3.32.8, JDK 17, Android SDK. Im Repository `bash tool/android.sh` ausführen, um das native Android-Gerüst aus dem gepinnten SDK zu ergänzen. Anschliessend `flutter pub get`, `flutter analyze`, `flutter test` und `flutter build apk --debug`. Das Gerüst verwendet die App-ID ch.stromheftli.app. Echte Messdaten und Rechnungen gehören nicht ins Repository.
+
+## Monatsimport prüfen
+
+XLSX und CSV verwenden dieselbe Zeit- und Tarifberechnung. CSV unterstützt Semikolon, Tabulator oder Komma und Dezimalpunkt bzw. Dezimalkomma. Der Spaltentitel bestimmt die Einheit: Wirkleistung [kW] ist ein Viertelstundenmittel, Energie [kWh] die Energie des Intervalls. Ein optionaler Kontrollwert in kWh muss auf drei Nachkommastellen zur Dateisumme passen, bevor gespeichert wird. Die Vorschau zeigt die komplette Datei mit HT/NT. Bei mehreren Tagen öffnet die App nach dem Speichern den letzten importierten Kalendermonat. Bei einem weiteren Import ersetzen bestätigte Korrekturen dieselben Viertelstunden.

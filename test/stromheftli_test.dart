@@ -29,6 +29,42 @@ Uint8List workbook(){
 class UnusedDatabase extends Fake implements Database {}
 void main(){
   tz.initializeTimeZones();
+  test('Oktober: 3623.195 kWh im Monat, 148 kWh am letzten Samstag',(){
+    final start=DateTime.utc(2026,9,30,22);
+    final csv=StringBuffer('\ufeffDatum;Uhrzeit;Wirkleistung [kW]\r\n');
+    final xml=StringBuffer('<worksheet><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>Datum</t></is></c><c r="B1" t="inlineStr"><is><t>Uhrzeit</t></is></c><c r="C1" t="inlineStr"><is><t>Wirkleistung [kW]</t></is></c></row>');
+    for(var i=0;i<2980;i++){
+      final end=local(start.millisecondsSinceEpoch+(i+1)*quarter);
+      final kw=i==0?62.38:i==2884?22.0:i>=2884?6.0:4.8;
+      final value=kw.toString().replaceAll('.',',');
+      csv.writeln('${date(end)};${clock(end)};$value');
+      final r=i+2;
+      xml.write('<row r="$r"><c r="A$r" t="inlineStr"><is><t>${date(end)}</t></is></c><c r="B$r" t="inlineStr"><is><t>${clock(end)}</t></is></c><c r="C$r"><v>$kw</v></c></row>');
+    }
+    xml.write('</sheetData></worksheet>');
+    final archive=ZipDecoder().decodeBytes(workbook());
+    final data=utf8.encode(xml.toString());
+    archive.addFile(ArchiveFile('xl/worksheets/sheet1.xml',data.length,data));
+    for(final bytes in [utf8.encode(csv.toString()),ZipEncoder().encode(archive)!]){
+      final p=resolveSheet(readLoad(Uint8List.fromList(bytes)),true);
+      expect(p.errors,isEmpty);expect(p.data.length,2980);expect(p.gaps,0);
+      final store=Store(UnusedDatabase())..readings.addAll(p.data);
+      final month=bucket(store,start.millisecondsSinceEpoch,midnight(DateTime.utc(2026,11)));
+      expect(month.total,closeTo(3623.195,1e-8));
+      expect(month.ht,closeTo(1267.2,1e-8));expect(month.nt,closeTo(2355.995,1e-8));
+      final sat=bucket(store,midnight(DateTime.utc(2026,10,31)),month.stop);
+      expect(sat.nt,closeTo(148,1e-8));expect(sat.ht,0);
+    }
+  });
+  test('Intervallenergie und Leistung liefern dieselben kWh',(){
+    for(final (header,value) in [('Energie [kWh]','1,125'),('Wirkleistung [kW]','4,5'),('Leistung [W]','4500'),('Energie [Wh]','1125')]){
+      final csv='Datum;Zeit;$header\n01.10.2026;07:15;$value';
+      final p=resolveSheet(readLoad(utf8.encode(csv)),true);
+      expect(p.data.values.single,1.125);
+      expect(high(p.data.keys.single,standard()),true);
+    }
+    expect(()=>readLoad(utf8.encode('Datum;Zeit;Zählerstand [kWh]\n01.10.2026;00:15;9000')),throwsFormatException);
+  });
   test('Excel Datum/Zeit als Text und Zahlen, kW in kWh',(){
     final p=resolveSheet(readBook(workbook()),true);
     expect(p.errors,isEmpty);expect(p.data.length,4);

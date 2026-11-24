@@ -96,6 +96,20 @@ def main():
     touch("Import bestätigen")
     find("1.39 kWh")
     print("XLSX import via DocumentsUI confirmed",flush=True)
+    document("september.csv","text/csv","Datum;Zeit;Energie [kWh]\n01.09.2026;07:00;1,25\n02.09.2026;07:15;2,75\n".encode())
+    touch("Verbrauch",prefix=True)
+    touch("Lastgang importieren",prefix=True)
+    try:
+        touch("september.csv",timeout=8)
+    except AssertionError:
+        touch("Show roots",timeout=10)
+        touch("Downloads")
+        touch("september.csv")
+    find("HT 2.75 kWh · NT 1.25 kWh")
+    touch("Import bestätigen")
+    find("4 kWh")
+    find("HT 2.75 kWh · NT 1.25 kWh")
+    print("CSV, Intervallenergie und HT/NT im importierten Monat bestätigt",flush=True)
     pdf=document("rechnung.pdf","application/pdf",sample_pdf())
     # adb sends the raw intent straight to ActivityManager. A regular sharing app
     # supplies ClipData for the grant. Include the same URI as data for adb.

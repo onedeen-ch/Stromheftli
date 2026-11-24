@@ -11,9 +11,21 @@ class ImportReview extends StatefulWidget {
 class _Review extends State<ImportReview>{
   late bool end=widget.store.settings['end']!='false';
   bool lateHour=false;
+  String control='';
   @override Widget build(BuildContext context){
     final p=resolveSheet(widget.sheet,end,late:lateHour);
     final keys=p.data.keys.toList()..sort();
+    final sum=p.data.values.fold(0.0,(a,b)=>a+b);
+    double ht=0, nt=0;
+    for(final e in p.data.entries){
+      if(high(e.key,widget.store.windows(e.key))){ht+=e.value;}else{nt+=e.value;}
+    }
+    double? expected;
+    if(control.trim().isNotEmpty){
+      try{expected=parseValue(control);}on FormatException{expected=null;}
+    }
+    final matches=control.trim().isEmpty || (expected!=null && (sum-expected).abs()<0.000500001);
+    final unitText=const {'kw':'kW × 0.25 h','w':'W × 0.25 h ÷ 1000','kwh':'kWh je Viertelstunde','wh':'Wh ÷ 1000'}[widget.sheet.unit];
     final changes=keys.where((t)=>widget.store.readings.containsKey(t)&&widget.store.readings[t]!=p.data[t]).toList();
     final same=keys.where((t)=>widget.store.readings[t]==p.data[t]).length;
     String label(int n)=>'${date(local(n))} ${clock(local(n))}';
@@ -25,7 +37,11 @@ class _Review extends State<ImportReview>{
       if(keys.isNotEmpty)...[
         Text('${clock(local(keys.first+(end?quarter:0)))} → Verbrauch von ${clock(local(keys.first))} bis ${clock(local(keys.first+quarter))}'),
         const Divider(),Text('${label(keys.first)} – ${label(keys.last+quarter)}'),
-        Text('${keys.length} gültige Intervalle · ${amount(p.data.values.fold(0.0,(a,b)=>a+b))} kWh'),
+        Text('Gesamte Datei · ${amount(sum)} kWh'),
+        Text('HT ${amount(ht)} kWh · NT ${amount(nt)} kWh'),
+        Text('${keys.length} Intervalle · $unitText'),
+        TextField(decoration:const InputDecoration(labelText:'Kontrollsumme in kWh (optional)',hintText:'z. B. 3623.195'),keyboardType:const TextInputType.numberWithOptions(decimal:true),onChanged:(s)=>setState(()=>control=s)),
+        if(!matches)Text(expected==null?'Kontrollsumme prüfen.':'Abweichung: ${amount(sum-expected)} kWh. Bitte Einheit und Zeitraum prüfen.'),
         Text('${p.gaps} fehlende Intervalle innerhalb der Zeitreihe'),
         Text('$same identisch · ${changes.length} Korrekturen'),
         if(changes.isNotEmpty)ExpansionTile(title:const Text('Korrekturen ansehen'),children:[for(final t in changes)Text('${label(t)}: ${amount(widget.store.readings[t]!)} → ${amount(p.data[t]!)} kWh')]),
@@ -34,7 +50,7 @@ class _Review extends State<ImportReview>{
         Text(p.warnings.join('\n')),
         SwitchListTile(title:const Text('Spätere Stunde für uneindeutige Zeilen'),value:lateHour,onChanged:(v)=>setState(()=>lateHour=v))],
       if(p.errors.isNotEmpty)ExpansionTile(title:Text('${p.errors.length} fehlerhafte Zeilen werden ausgelassen'),children:[SelectableText(p.errors.join('\n'))]),
-      const SizedBox(height:16),FilledButton(onPressed:keys.isEmpty?null:()=>Navigator.pop(context,(p,end)),child:Text(changes.isEmpty?'Import bestätigen':'Import und Korrekturen bestätigen'))
+      const SizedBox(height:16),FilledButton(onPressed:keys.isEmpty||!matches?null:()=>Navigator.pop(context,(p,end)),child:Text(changes.isEmpty?'Import bestätigen':'Import und Korrekturen bestätigen'))
     ]));
   }
 }

@@ -71,12 +71,16 @@ class _Home extends State<Home>{
     if(path==null)return;
     final file=File(path);
     try{
-      final sheet=await compute(readBook,await file.readAsBytes());
+      final sheet=await compute(readLoad,await file.readAsBytes());
       if(!mounted)return;
       final out=await Navigator.push<(ImportPreview,bool)>(context,MaterialPageRoute(builder:(_)=>ImportReview(sheet,db)));
       if(out==null)return;
       await db.save(out.$1,out.$2);
-      focus=overviewDay(); message('Lastgang gespeichert');
+      final stamps=out.$1.data.keys.toList()..sort();
+      final first=day(local(stamps.first)), last=day(local(stamps.last));
+      focus=last;
+      if(first!=last){tab=1;period=2;}else{period=0;}
+      message('Lastgang gespeichert');
     }finally{if(await file.exists())await file.delete();}
   }
   Future<void> importPdf(String path) async{
@@ -113,8 +117,8 @@ class _Home extends State<Home>{
     final b=bucket(db,midnight(d),midnight(d.add(const Duration(days:1))));
     Widget tariff(String name,Color color,double v)=>ListTile(contentPadding:EdgeInsets.zero,leading:Icon(Icons.circle,size:12,color:color),title:Wrap(alignment:WrapAlignment.spaceBetween,spacing:12,children:[Text(name),Text('${amount(v)} kWh · ${b.total==0?0:(100*v/b.total).round()} %')]));
     return [link(db.settings['place']??'Uzwil',Icons.place_outlined,location),const Divider(),
-      if(db.readings.isEmpty)...[const Text('Importiere deinen ersten Excel-Lastgang.'),importLink]
-      else ...[Text('${d==y?"Gestern · ":""}${date(d)}'),const SizedBox(height:16),Ring(b),const SizedBox(height:12),
+      if(db.readings.isEmpty)...[const Text('Importiere deinen Lastgang als Excel- oder CSV-Datei.'),importLink]
+      else ...[Text('Tagesverbrauch · ${d==y?"Gestern · ":""}${date(d)}'),const SizedBox(height:16),Ring(b),const SizedBox(height:12),
         tariff('Hochtarif',htColor,b.ht),const Divider(),tariff('Niedertarif',ntColor,b.nt),
         if(!b.complete)Text('Unvollständig · ${b.count} von ${(b.stop-b.start)~/quarter} Viertelstunden'),
         const Divider(),if(db.settings['import']!=null)Text('Letzter Import · ${date(local(int.parse(db.settings["import"]!)))}')]];
@@ -142,6 +146,7 @@ class _Home extends State<Home>{
         IconButton(tooltip:'Weiter',onPressed:()=>step(1),icon:const Icon(Icons.chevron_right))]),
       if(bars.any((b)=>b.count>0))...[
         Text('${amount(bars.fold(0.0,(n,b)=>n+b.total))} kWh',style:Theme.of(context).textTheme.titleLarge),
+        Text('HT ${amount(bars.fold(0.0,(n,b)=>n+b.ht))} kWh · NT ${amount(bars.fold(0.0,(n,b)=>n+b.nt))} kWh'),
         const SizedBox(height:12),Graph(bars,period==0,key:ValueKey('$period-$a')),
         if(bars.any((b)=>!b.complete)) Text('Unvollständig · ${bars.fold(0,(n,b)=>n+(b.stop-b.start)~/quarter-b.count)} Viertelstunden fehlen')
       ]else const Text('Keine Messwerte für diesen Zeitraum.'),

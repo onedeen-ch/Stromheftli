@@ -31,7 +31,7 @@ class MainActivity : FlutterActivity() {
                     else {
                         picker = reply
                         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
-                        intent.type = if (call.arguments == "pdf") "application/pdf" else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        intent.type = if (call.arguments == "pdf") "application/pdf" else "*/*"
                         try { startActivityForResult(intent, 47) }
                         catch (e: Exception) { picker = null; reply.error("picker",e.message,null) }
                     }
