@@ -7,6 +7,9 @@ import android.os.Bundle
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.text.PDFTextStripper
 import java.io.File
 import java.util.concurrent.Executors
 
@@ -22,6 +25,20 @@ class MainActivity : FlutterActivity() {
             when (call.method) {
                 "directory" -> reply.success(filesDir.absolutePath)
                 "takeShare" -> reply.success(pending.removeFirstOrNull())
+                "extractPdf" -> {
+                    val path = call.arguments as String
+                    worker.execute {
+                        try {
+                            PDFBoxResourceLoader.init(applicationContext)
+                            val text = PDDocument.load(File(path)).use { document ->
+                                PDFTextStripper().apply { sortByPosition = true }.getText(document)
+                            }
+                            runOnUiThread { reply.success(text) }
+                        } catch (e: Exception) {
+                            runOnUiThread { reply.error("pdfText", e.message, null) }
+                        }
+                    }
+                }
                 "openPdf" -> {
                     startActivity(Intent(this, PdfActivity::class.java).putExtra("path",call.arguments as String))
                     reply.success(null)

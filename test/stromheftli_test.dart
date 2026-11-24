@@ -9,6 +9,7 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'package:stromheftli/energy.dart';
 import 'package:stromheftli/main.dart';
 import 'package:stromheftli/storage.dart';
+import 'package:stromheftli/billing.dart';
 
 Uint8List workbook(){
   final archive=Archive();
@@ -138,14 +139,27 @@ void main(){
     expect(reopened.settings['end'],'true');
     await reopened.db.close();await dir.delete(recursive:true);
   });
+  test('Rechnungsdaten und anonymisierte MP-Anzeige',(){
+    final d=extractBill('Kundenname: Max Muster\nKundennummer: 12345\nMesspunktbezeichnung: 000001358\nZeitraum: 01.09.2026 bis 31.10.2026\nRechnungsbetrag CHF 123.45\nEnergie HT 25.0 Rp./kWh');
+    expect(d['customer'],'12345');expect(shortMp(d['mp']),'MP *1358');
+    expect(billPeriod(d),'01.09.2026 – 31.10.2026 (2-monatig)');
+    expect(d['total'],'123.45');expect(d['ht'],'25.0');
+  });
+  test('Einspeisung und Bezug bleiben getrennt',(){
+    final store=Store(UnusedDatabase()),t=midnight(DateTime.utc(2026,10,1));
+    store.readings[t]=3;store.feed[t]=1;
+    expect(bucket(store,t,t+quarter).total,3);
+    expect(bucket(store,t,t+quarter,export:true).total,1);
+  });
   testWidgets('Leerer Start, Import und alle drei Hauptseiten',(tester)async{
     final db=UnusedDatabase();
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(bridge,(call)async=>null);
     await tester.pumpWidget(App(Store(db)));await tester.pumpAndSettle();
-    expect(find.text('Lastgang importieren'),findsOneWidget);
-    await tester.tap(find.text('Verbrauch'));await tester.pumpAndSettle();
+    expect(find.text('Dashboard'),findsWidgets);
+    expect(find.text('Tagesverbrauch gestern'),findsOneWidget);
+    await tester.tap(find.text('Verbrauch').first);await tester.pumpAndSettle();
     expect(find.text('Tarifzeiten'),findsOneWidget);
-    await tester.tap(find.text('Rechnungen'));await tester.pumpAndSettle();
+    await tester.tap(find.text('Rechnungen').first);await tester.pumpAndSettle();
     expect(find.text('PDF importieren'),findsOneWidget);
     await tester.pumpWidget(const SizedBox());
   });

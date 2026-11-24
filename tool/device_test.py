@@ -84,6 +84,7 @@ def sample_pdf():
 
 def main():
     shell("am","start","-n",ACTIVITY)
+    touch("Verbrauch",prefix=True)
     find("Lastgang importieren",prefix=True)
     document("lastgang.xlsx","application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",sample_xlsx())
     touch("Lastgang importieren",prefix=True)
@@ -97,7 +98,6 @@ def main():
     find("1.39 kWh")
     print("XLSX import via DocumentsUI confirmed",flush=True)
     document("september.csv","text/csv","Datum;Zeit;Energie [kWh]\n01.09.2026;07:00;1,25\n02.09.2026;07:15;2,75\n".encode())
-    touch("Verbrauch",prefix=True)
     touch("Lastgang importieren",prefix=True)
     try:
         touch("september.csv",timeout=8)
@@ -122,7 +122,7 @@ def main():
     shell("svc","wifi","disable")
     shell("svc","data","disable")
     shell("am","start","-n",ACTIVITY)
-    find("1.39 kWh")
+    find("Tagesverbrauch gestern",prefix=True)
     touch("Rechnungen",prefix=True)
     # Bill's month depends on the emulator clock.
     month=int(shell("date","+%m").strip())

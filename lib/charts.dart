@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'energy.dart';
 import 'storage.dart';
 
-const htColor=Color(0xffc62332),ntColor=Color(0xff4674a7);
+const htColor=Color(0xff0873b8),ntColor=Color(0xff13a785);
 class Ring extends StatelessWidget{
   final Bucket value;
   const Ring(this.value,{super.key});
@@ -29,13 +29,16 @@ class _Arc extends CustomPainter{
 class Graph extends StatefulWidget{
   final List<Bucket> bars;
   final bool hours;
-  const Graph(this.bars,this.hours,{super.key});
+  final int period;
+  const Graph(this.bars,this.hours,{super.key,this.period=0});
   @override State<Graph> createState()=>_Graph();
 }
 class _Graph extends State<Graph>{
   int? selected;
   String label(Bucket b){
     final d=local(b.start);
+    if(widget.period==4)return '${d.year}';
+    if(widget.period==3)return '${two(d.month)}.${d.year}';
     return widget.hours?'${date(d)} · ${clock(d)} ${d.timeZoneName}':date(d);
   }
   @override Widget build(BuildContext context){
@@ -58,7 +61,7 @@ class _Graph extends State<Graph>{
                 ])),
               SizedBox(height:24,child:FittedBox(fit:BoxFit.scaleDown,child:Text(widget.hours?
                 (local(bars[i].start).minute==0?two(local(bars[i].start).hour):''):
-                (bars.length==7?['Mo','Di','Mi','Do','Fr','Sa','So'][i]:'${local(bars[i].start).day}'))))
+                (widget.period==4?'${local(bars[i].start).year}':widget.period==3?two(local(bars[i].start).month):bars.length==7?['Mo','Di','Mi','Do','Fr','Sa','So'][i]:'${local(bars[i].start).day}'))))
             ]))))
         ])));
       }),

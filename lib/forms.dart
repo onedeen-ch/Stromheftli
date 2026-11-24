@@ -5,11 +5,12 @@ import 'storage.dart';
 class ImportReview extends StatefulWidget {
   final Sheet sheet;
   final Store store;
-  const ImportReview(this.sheet,this.store,{super.key});
+  final bool export;
+  const ImportReview(this.sheet,this.store,{super.key,this.export=false});
   @override State<ImportReview> createState()=>_Review();
 }
 class _Review extends State<ImportReview>{
-  late bool end=widget.store.settings['end']!='false';
+  late bool end=widget.store.settings[widget.export?'feedEnd':'end']!='false';
   bool lateHour=false;
   String control='';
   @override Widget build(BuildContext context){
@@ -26,16 +27,17 @@ class _Review extends State<ImportReview>{
     }
     final matches=control.trim().isEmpty || (expected!=null && (sum-expected).abs()<0.000500001);
     final unitText=const {'kw':'kW × 0.25 h','w':'W × 0.25 h ÷ 1000','kwh':'kWh je Viertelstunde','wh':'Wh ÷ 1000'}[widget.sheet.unit];
-    final changes=keys.where((t)=>widget.store.readings.containsKey(t)&&widget.store.readings[t]!=p.data[t]).toList();
-    final same=keys.where((t)=>widget.store.readings[t]==p.data[t]).length;
+    final existing=widget.export?widget.store.feed:widget.store.readings;
+    final changes=keys.where((t)=>existing.containsKey(t)&&existing[t]!=p.data[t]).toList();
+    final same=keys.where((t)=>existing[t]==p.data[t]).length;
     String label(int n)=>'${date(local(n))} ${clock(local(n))}';
-    return Scaffold(appBar:AppBar(title:const Text('Import prüfen')),body:ListView(padding:const EdgeInsets.all(16),children:[
+    return Scaffold(appBar:AppBar(title:Text(widget.export?'Einspeisung prüfen':'Import prüfen')),body:ListView(padding:const EdgeInsets.all(16),children:[
       DropdownButtonFormField<bool>(value:end,isExpanded:true,items:const [
         DropdownMenuItem(value:true,child:Text('Zeit bezeichnet Intervallende')),
         DropdownMenuItem(value:false,child:Text('Zeit bezeichnet Intervallbeginn'))],
         onChanged:(v)=>setState(()=>end=v!)),
       if(keys.isNotEmpty)...[
-        Text('${clock(local(keys.first+(end?quarter:0)))} → Verbrauch von ${clock(local(keys.first))} bis ${clock(local(keys.first+quarter))}'),
+        Text('${clock(local(keys.first+(end?quarter:0)))} → Intervall von ${clock(local(keys.first))} bis ${clock(local(keys.first+quarter))}'),
         const Divider(),Text('${label(keys.first)} – ${label(keys.last+quarter)}'),
         Text('Gesamte Datei · ${amount(sum)} kWh'),
         Text('HT ${amount(ht)} kWh · NT ${amount(nt)} kWh'),
@@ -44,7 +46,7 @@ class _Review extends State<ImportReview>{
         if(!matches)Text(expected==null?'Kontrollsumme prüfen.':'Abweichung: ${amount(sum-expected)} kWh. Bitte Einheit und Zeitraum prüfen.'),
         Text('${p.gaps} fehlende Intervalle innerhalb der Zeitreihe'),
         Text('$same identisch · ${changes.length} Korrekturen'),
-        if(changes.isNotEmpty)ExpansionTile(title:const Text('Korrekturen ansehen'),children:[for(final t in changes)Text('${label(t)}: ${amount(widget.store.readings[t]!)} → ${amount(p.data[t]!)} kWh')]),
+        if(changes.isNotEmpty)ExpansionTile(title:const Text('Korrekturen ansehen'),children:[for(final t in changes)Text('${label(t)}: ${amount(existing[t]!)} → ${amount(p.data[t]!)} kWh')]),
       ],
       if(p.warnings.isNotEmpty)...[
         Text(p.warnings.join('\n')),

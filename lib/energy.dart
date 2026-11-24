@@ -62,7 +62,7 @@ class Columns {
     final names={for(final e in cells.entries)clean(e.value):e.key};
     final d=names['datum']??names['date'], t=names['zeit']??names['uhrzeit']??names['time'];
     if(d==null||t==null)return null;
-    final pattern=RegExp(r'^(wirkleistung|leistung|wirkenergie|energie|verbrauch|netzbezug|bezug|lastgang|messwert|arbeit|wert)?_?(kwh|wh|kw|w)$');
+    final pattern=RegExp(r'^(wirkleistung|leistung|wirkenergie|energie|verbrauch|netzbezug|bezug|einspeisung|rücklieferung|ruecklieferung|netzeinspeisung|lastgang|messwert|arbeit|wert)?_?(kwh|wh|kw|w)$');
     final measures=cells.entries.where((e)=>pattern.hasMatch(clean(e.value))).toList();
     if(measures.length!=1)throw const FormatException('Eine eindeutige Intervallwert-Spalte mit Einheit kW, W, kWh oder Wh wird benötigt. Zählerstände werden nicht summiert.');
     final m=measures.single;
