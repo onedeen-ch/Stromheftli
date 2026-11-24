@@ -111,8 +111,7 @@ class _Home extends State<Home>{
   List<Widget> overview(){
     final d=overviewDay(),y=day(local(DateTime.now().millisecondsSinceEpoch)).subtract(const Duration(days:1));
     final b=bucket(db,midnight(d),midnight(d.add(const Duration(days:1))));
-    Widget tariff(String name,Color color,double v)=>ListTile(contentPadding:EdgeInsets.zero,leading:Icon(Icons.circle,size:12,color:color),title:Text(name),
-      subtitle:Text('${amount(v)} kWh · ${b.total==0?0:(100*v/b.total).round()} %'));
+    Widget tariff(String name,Color color,double v)=>ListTile(contentPadding:EdgeInsets.zero,leading:Icon(Icons.circle,size:12,color:color),title:Wrap(alignment:WrapAlignment.spaceBetween,spacing:12,children:[Text(name),Text('${amount(v)} kWh · ${b.total==0?0:(100*v/b.total).round()} %')]));
     return [link(db.settings['place']??'Uzwil',Icons.place_outlined,location),const Divider(),
       if(db.readings.isEmpty)...[const Text('Importiere deinen ersten Excel-Lastgang.'),importLink]
       else ...[Text('${d==y?"Gestern · ":""}${date(d)}'),const SizedBox(height:16),Ring(b),const SizedBox(height:12),

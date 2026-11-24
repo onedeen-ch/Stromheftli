@@ -23,7 +23,7 @@ class _Review extends State<ImportReview>{
         DropdownMenuItem(value:false,child:Text('Zeit bezeichnet Intervallbeginn'))],
         onChanged:(v)=>setState(()=>end=v!)),
       if(keys.isNotEmpty)...[
-        Text('${clock(widget.sheet.rows.first.wall)} → Verbrauch von ${clock(local(keys.first))} bis ${clock(local(keys.first+quarter))}'),
+        Text('${clock(local(keys.first+(end?quarter:0)))} → Verbrauch von ${clock(local(keys.first))} bis ${clock(local(keys.first+quarter))}'),
         const Divider(),Text('${label(keys.first)} – ${label(keys.last+quarter)}'),
         Text('${keys.length} gültige Intervalle · ${amount(p.data.values.fold(0.0,(a,b)=>a+b))} kWh'),
         Text('${p.gaps} fehlende Intervalle innerhalb der Zeitreihe'),
