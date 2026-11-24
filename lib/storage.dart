@@ -44,7 +44,7 @@ class Store {
     await db.insert('settings',{'name':key,'value':value},conflictAlgorithm:ConflictAlgorithm.replace);
     settings[key]=value;
   }
-  Future<void> save(Preview p,bool end) async{
+  Future<void> save(ImportPreview p,bool end) async{
     await db.transaction((tx)async{
       final batch=tx.batch();
       for(final e in p.data.entries){

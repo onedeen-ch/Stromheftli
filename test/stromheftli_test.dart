@@ -26,6 +26,7 @@ Uint8List workbook(){
     '</sheetData></worksheet>');
   return Uint8List.fromList(ZipEncoder().encode(archive)!);
 }
+class UnusedDatabase extends Fake implements Database {}
 void main(){
   tz.initializeTimeZones();
   test('Excel Datum/Zeit als Text und Zahlen, kW in kWh',(){
@@ -77,7 +78,7 @@ void main(){
     await reopened.db.close();await dir.delete(recursive:true);
   });
   testWidgets('Leerer Start, Import und alle drei Hauptseiten',(tester)async{
-    final db=await databaseFactoryFfi.openDatabase(inMemoryDatabasePath);
+    final db=UnusedDatabase();
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(bridge,(call)async=>null);
     await tester.pumpWidget(App(Store(db)));await tester.pumpAndSettle();
     expect(find.text('Lastgang importieren'),findsOneWidget);
@@ -85,6 +86,6 @@ void main(){
     expect(find.text('Tarifzeiten'),findsOneWidget);
     await tester.tap(find.text('Rechnungen'));await tester.pumpAndSettle();
     expect(find.text('PDF importieren'),findsOneWidget);
-    await tester.pumpWidget(const SizedBox());await db.close();
+    await tester.pumpWidget(const SizedBox());
   });
 }

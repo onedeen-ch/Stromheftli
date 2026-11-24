@@ -100,7 +100,7 @@ Sheet readBook(Uint8List bytes){
   }
   throw const FormatException('Spalten Datum, Zeit und Wirkleistung [kW] fehlen.');
 }
-class Preview {
+class ImportPreview {
   final data=<int,double>{};
   final warnings=<String>[];
   final errors=<String>[];
@@ -111,13 +111,13 @@ List<int> candidates(DateTime w){
   return {for(final shift in [-86400000,86400000])start-zurich.timeZone(start+shift).offset}
       .where((t){final l=local(t);return l.year==w.year&&l.month==w.month&&l.day==w.day&&l.hour==w.hour&&l.minute==w.minute;}).toList()..sort();
 }
-Preview resolveSheet(Sheet sheet,bool end,{bool late=false}){
-  final p=Preview()..errors.addAll(sheet.errors);
+ImportPreview resolveSheet(Sheet sheet,bool end,{bool late=false}){
+  final p=ImportPreview()..errors.addAll(sheet.errors);
   final options=sheet.rows.map((r)=>candidates(r.wall)).toList();
   final latest=List<int?>.filled(options.length,null);
   int? next;
   for(var i=options.length-1;i>=0;i--){
-    final valid=options[i].where((t)=>next==null || t<next!).toList();
+    final valid=options[i].where((t)=>next==null || t<next).toList();
     latest[i]=valid.lastOrNull;
     next=latest[i];
   }
@@ -125,7 +125,7 @@ Preview resolveSheet(Sheet sheet,bool end,{bool late=false}){
   for(var i=0;i<sheet.rows.length;i++){
     final r=sheet.rows[i], all=options[i];
     if(all.isEmpty){p.errors.add('Zeile ${r.row}: Ortszeit existiert nicht');continue;}
-    final valid=all.where((t)=>(prev==null || t>prev!) && (latest[i]==null || t<=latest[i]!)).toList();
+    final valid=all.where((t)=>(prev==null || t>prev) && (latest[i]==null || t<=latest[i]!)).toList();
     if(all.length>1 && valid.isEmpty){p.errors.add('Zeile ${r.row}: Winterzeit-Reihenfolge unklar');continue;}
     if(valid.length>1)p.warnings.add('Zeile ${r.row}: doppeldeutige Ortszeit ${clock(r.wall)}');
     final instant=valid.isEmpty?all.first:(late?valid.last:valid.first);

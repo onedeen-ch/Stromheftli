@@ -73,7 +73,7 @@ class _Home extends State<Home>{
     try{
       final sheet=await compute(readBook,await file.readAsBytes());
       if(!mounted)return;
-      final out=await Navigator.push<(Preview,bool)>(context,MaterialPageRoute(builder:(_)=>ImportReview(sheet,db)));
+      final out=await Navigator.push<(ImportPreview,bool)>(context,MaterialPageRoute(builder:(_)=>ImportReview(sheet,db)));
       if(out==null)return;
       await db.save(out.$1,out.$2);
       focus=overviewDay(); message('Lastgang gespeichert');
